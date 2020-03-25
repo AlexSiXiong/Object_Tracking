@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dr.Strange Effect</title>
+    <style>
+        canvas{
+            border: solid 2px;
+            /*position: absolute;*/
+        }
+        /*.canvas-wrapper {*/
+        /*    position: relative;*/
+        /*}*/
+    </style>
+    <script>
+        const log = console.log.bind(console)
+
+        let camera_canvas = null
+        let effects_canvas = null
+        const size = 600
+        const interval = 40
+
+        let COLOR = [255, 225, 225] // target color - white
+        const threshold = 10 // to get the central point of the target object
+
+
+        let flag = 0 // use flag to control the coordinates
+        let coordinates = 0
+
+        // **
+        // This part manages motion trails of the target object
+
+        let path = []
+        const path_life_time = 300
+
+        // the list <path> stores the coordinates of the movement
+        //
+        // **
+        const main = () => {
+            camera_canvas = document.getElementById('camera')
+            camera_canvas.width = size
+            camera_canvas.height = size
+
+            effects_canvas = document.getElementById('effects')
+            effects_canvas.width = size
+            effects_canvas.height = size
+
+            const constraints = {video: true}
+            const permission = navigator.mediaDevices.getUserMedia(constraints)
+            // after opening the camera
+            // everything works in the video stream
+            //
+            //
+            // permission(camera) -> get the video stream -> do everything here....
+            //
+            //
+            permission.then(
+                (stream) => {
+                    const video = document.createElement('video')
+                    video.srcObject = stream
+                    video.play()
+                    setInterval(updateImage, interval, video)
+                }
+            ).catch(
+                (err) => alert('camera error')
+            )
+            // camera_canvas.addEventListener('mousedown', updateColor)
+        }
+
+
+        const updateImage = (video) => {
+            const context = camera_canvas.getContext('2d')
+
+            // ** This is the camera canvas - processes live video stream **
+            // -----------------------------
+            // fix 'Squished' view on camera
+            let minSize = Math.min(video.videoWidth, video.videoHeight)
+            let startX = (video.videoWidth - minSize) / 2
+            let startY = (video.videoHeight - minSize) / 2
+            context.drawImage(video, startX, startY, minSize, minSize, 0, 0, size, size)
+            //
+            // -----------------------------
+            // ** Above is the camera canvas - processes live video stream **
+
+            // ** This is the effects canvas - processes the coordinates/Location of the target object **
+            //
+            //    Note:
+            //    The 'canvas' element is created at the function <showLocations>,
+            //    which returns [x, y] , a set of 2d coordinates.
+            //
+
+            clearEffectsCanvas()
+
+            if(flag === 0 || coordinates === 0) {
+                coordinates = getRandomNum()
+            }
+            showEffectsCanvas(coordinates)
+
+
+            // ** Above is the effects canvas - processes the coordinates of the target object **
+
+
+        }
+
+        const clearEffectsCanvas = () => {
+            const context = effects_canvas.getContext('2d')
+            context.clearRect(0, 0, size, size)
+        }
+
+
+        const keepRecentPartOfPath = () => {
+            const now = new Date().getTime()
+            while(path.length > 0 && now - path[0].time > path_life_time) {
+
+                // how shift() works
+                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/shift
+
+                path.shift()
+            }
+        }
+
+        const drawPath = () => {
+            for(let i = 0; i < path.length - 1; i++) {
+                drawSegment(path[i], path[i+1])
+            }
+        }
+
+        const drawSegment = (from, to) => {
+            const context = effects_canvas.getContext('2d')
+            context.beginPath()
+            context.moveTo(...from)
+            context.lineTo(...to)
+            context.strokeStyle = 'red'
+            context.stroke()
+        }
+
+        const showEffectsCanvas = (x) => {
+            const context = effects_canvas.getContext('2d')
+            context.strokeStyle = "red"
+            context.lineWidth = 8
+            context.strokeRect(x, x, 200, 200)
+            flag++
+            if (flag === 1) {
+                flag = 0
+            }
+        }
+        const getRandomNum = () => {
+            return Math.floor(Math.random()*400)
+        }
+    </script>
+
+
+</head>
+<body onload="main()">
+<h1> Show Effects</h1>
+<div class="canvas-wrapper">
+    <canvas id="camera"></canvas>
+    <canvas id="effects"></canvas>
+</div>
+</body>
+</html>

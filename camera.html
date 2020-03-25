@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dr.Strange Effect</title>
+    <style>
+        canvas{
+            border: solid 2px;
+        }
+    </style>
+    <script>
+        let camera_canvas = null
+        let effects_canvas = null
+        const size = 300
+        const interval = 40
+
+        const main = () => {
+            camera_canvas = document.getElementById('camera')
+            camera_canvas.width = size
+            camera_canvas.height = size
+
+            effects_canvas = document.getElementById('effects')
+            effects_canvas.width = size
+            effects_canvas.height = size
+
+            const constraints = {video: true}
+            const permission = navigator.mediaDevices.getUserMedia(constraints)
+            // after opening the camera
+            // everything works in the video stream
+            //
+            //
+            // permission(camera) -> get the video stream -> do everything here....
+            //
+            //
+            log('hello')
+            permission.then(
+                (stream) => {
+                    const video = document.createElement('video')
+                    video.srcObject = stream
+                    video.play()
+                    log('camera is running')
+                    setInterval(updateImage, interval, video)
+                }
+            ).catch(
+                (err) => alert('camera error')
+            )
+        }
+
+        const updateImage = (video) => {
+            const context = camera_canvas.getContext('2d')
+
+            // -----------------------------
+            // fix 'Squished' view on camera
+            let minSize = Math.min(video.videoWidth, video.videoHeight)
+            let startX = (video.videoWidth - minSize) / 2
+            let startY = (video.videoHeight - minSize) / 2
+            context.drawImage(video, startX, startY, minSize, minSize, 0, 0, size, size)
+            // -----------------------------
+
+            context.drawImage(video, 0, 0, size, size)
+
+        }
+    </script>
+</head>
+<body onload="main()">
+<h1> Show Effects</h1>
+<canvas id="camera"></canvas>
+<canvas id="effects"></canvas>
+</body>
+</html>

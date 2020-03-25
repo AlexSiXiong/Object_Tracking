@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dr.Strange Effect</title>
+    <style>
+        canvas{
+            border: solid 2px;
+            position: absolute;
+        }
+        .canvas-wrapper {
+            position: relative;
+        }
+    </style>
+    <script>
+        const log = console.log.bind(console)
+
+        let camera_canvas = null
+        let effects_canvas = null
+        const size = 600
+        const interval = 40
+
+        const COLOR = [255, 225, 225] // target color - white
+        const threshold = 10
+
+        const main = () => {
+            camera_canvas = document.getElementById('camera')
+            camera_canvas.width = size
+            camera_canvas.height = size
+
+            effects_canvas = document.getElementById('effects')
+            effects_canvas.width = size
+            effects_canvas.height = size
+
+            const constraints = {video: true}
+            const permission = navigator.mediaDevices.getUserMedia(constraints)
+            // after opening the camera
+            // everything works in the video stream
+            //
+            //
+            // permission(camera) -> get the video stream -> do everything here....
+            //
+            //
+            permission.then(
+                (stream) => {
+                    const video = document.createElement('video')
+                    video.srcObject = stream
+                    video.play()
+                    setInterval(updateImage, interval, video)
+                }
+            ).catch(
+                (err) => alert('camera error')
+            )
+            camera_canvas.addEventListener('mousedown', updateColor)
+        }
+
+        const updateColor = (event) => {
+            const location = getCursorPosition(event)
+            const context = camera_canvas.getContext('2d')
+            const imageData = context.getImageData(...location, 1, 1)
+            const oneDimensionArray = imageData.data
+            COLOR[0] = oneDimensionArray[0]
+            COLOR[1] = oneDimensionArray[1]
+            COLOR[2] = oneDimensionArray[2]
+            log(COLOR[0],COLOR[1],COLOR[2])
+            log('capturing')
+            console.log('aaa')
+        }
+
+        const getCursorPosition = (event) => {
+            const rect = camera_canvas.getBoundingClientRect()
+            const x = event.clientX - rect.left
+            const y = event.clientY - rect.top
+            return [x, y]
+        }
+        const updateImage = (video) => {
+            const context = camera_canvas.getContext('2d')
+
+            // ** This is the camera canvas - processes live video stream **
+            // -----------------------------
+            // fix 'Squished' view on camera
+            let minSize = Math.min(video.videoWidth, video.videoHeight)
+            let startX = (video.videoWidth - minSize) / 2
+            let startY = (video.videoHeight - minSize) / 2
+            context.drawImage(video, startX, startY, minSize, minSize, 0, 0, size, size)
+            //
+            // -----------------------------
+            // ** Above is the camera canvas - processes live video stream **
+
+            // ** This is the effects canvas - processes the coordinates/Location of the target object **
+            //
+            //    Note:
+            //    The 'canvas' element is created at the function <showLocations>,
+            //    which returns [x, y] , a set of 2d coordinates.
+            //
+            const coordinates = getPointerPixels()
+
+            showLocations(coordinates)
+
+            // ** Above is the effects canvas - processes the coordinates of the target object **
+
+
+        }
+
+        const getPointerPixels = () => {
+            // Get the coordinates of the target object
+            // return: [x, y]
+
+            const context = camera_canvas.getContext('2d')
+            const imageData = context.getImageData(0, 0, size, size)
+            const oneDimensionArr = imageData.data
+            const pixelLocation = []
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const r = oneDimensionArr[(y * size * 4 + x * 4)]
+                    const g = oneDimensionArr[(y * size * 4 + x * 4 + 1)]
+                    const b = oneDimensionArr[(y * size * 4 + x * 4 + 2)]
+
+                    // if the pixel match the target color
+                    //
+                    // https://www.sioe.cn/yingyong/yanse-rgb-16/
+                    // It helps to get the RGB number for testing
+                    //
+                    // if (COLOR[0] === r &&
+                    //     COLOR[1] === g &&
+                    //     COLOR[2] === b
+                    // ) {
+                    //     pixelLocation.push([x, y])
+                    // }
+
+                    if (distance(COLOR, [r,g,b]) < threshold) {
+                        pixelLocation.push([x, y])
+                    }
+                }
+            }
+            return pixelLocation
+        }
+
+        const showLocations = (locations) => {
+            const context = effects_canvas.getContext('2d')
+            for (let i = 0; i < locations.length; i++) {
+                log('I am painting...')
+                context.fillRect(...locations[i], 1, 1)
+            }
+            context.fill()
+        }
+
+        const distance = (p1, p2) => {
+            let dist = 0
+            for(let i = 0; i < p1.length; i++) {
+                dist += ( p1[0] -p2[i] ) * ( p1[i] - p2[i] )
+            }
+            return Math.sqrt(dist)
+        }
+
+        const clearEffectsCanvas = () => {
+            const context = effects_canvas.getContext('2d')
+            context.clearRect(0, 0, size, size)
+        }
+    </script>
+</head>
+<body onload="main()">
+<h1> Show Effects</h1>
+<div class="canvas-wrapper">
+    <canvas id="camera"></canvas>
+    <canvas id="effects"></canvas>
+</div>
+</body>
+</html>

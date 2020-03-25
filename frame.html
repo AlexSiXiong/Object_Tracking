@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dr.Strange Effect</title>
+    <style>
+        canvas{
+            border: solid 2px;
+        }
+    </style>
+    <script>
+        let camera_canvas = null
+        let effects_canvas = null
+        const size = 300
+
+        const main = () => {
+            camera_canvas = document.getElementById('camera')
+            camera_canvas.width = size
+            camera_canvas.height = size
+
+            effects_canvas = document.getElementById('effects')
+            effects_canvas.width = size
+            effects_canvas.height = size
+        }
+    </script>
+</head>
+<body onload="main()">
+<h1> Show Effects</h1>
+<canvas id="camera"></canvas>
+<canvas id="effects"></canvas>
+</body>
+</html>
